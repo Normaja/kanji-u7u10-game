@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Kanji Master - By Norma Jara</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh; }
+        
+        /* Menú de Unidades */
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; width: 94%; max-width: 1000px; margin-top: 20px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: #d1d5db; border-radius: 8px; cursor: pointer; font-weight: bold; color: #4b5563; transition: 0.3s; }
+        .tab-btn.active { background: #9884ba; color: white; box-shadow: 0 4px 10px rgba(152, 132, 186, 0.4); }
+
+        .section-label { align-self: flex-start; margin: 10px 0 5px 4%; font-weight: bold; color: #9884ba; font-size: 0.9rem; text-transform: uppercase; }
+
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+            gap: 12px; 
+            width: 94%; 
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .item { 
+            padding: 15px; background: white; border: 2px solid #9884ba; border-radius: 10px; 
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 65px; user-select: none;
+        }
+        
+        .item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(152, 132, 186, 0.2); }
+        .item.selected { background-color: #9884ba !important; border-color: #7a66a0; }
+        .item.selected .hiragana-text, .item.selected .kanji-text { color: white; }
+        .item.selected .translation-text { color: #eee; }
+        
+        .item.matched { background-color: #e0f2f1 !important; border-color: #80cbc4 !important; color: #b2dfdb !important; cursor: default; opacity: 0.3; transform: none !important; box-shadow: none !important; }
+
+        .kanji-text { font-size: 1.8rem; font-weight: bold; color: #2c3e50; }
+        .hiragana-text { font-size: 1.25rem; font-weight: bold; color: #2c3e50; }
+        .translation-text { font-size: 0.8rem; color: #777; margin-top: 3px; }
+
+        .footer-game { position: fixed; bottom: 20px; background: #2c3e50; color: white; padding: 12px 30px; border-radius: 40px; display: flex; gap: 25px; align-items: center; box-shadow: 0 8px 25px rgba(0,0,0,0.3); z-index: 1000; }
+        .btn-reset { padding: 8px 20px; background: #9884ba; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        
+        /* Firma Final Personalizada */
+        .signature { margin: 40px 0 120px 0; font-size: 1.1rem; color: #7a66a0; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchUnit('u7', this)">Unidad 7</button>
+        <button class="tab-btn" onclick="switchUnit('u8', this)">Unidad 8</button>
+        <button class="tab-btn" onclick="switchUnit('u9', this)">Unidad 9</button>
+        <button class="tab-btn" onclick="switchUnit('u10', this)">Unidad 10</button>
+    </div>
+
+    <div class="section-label">1. Kanjis</div>
+    <div class="grid-container" id="kanji-grid"></div>
+
+    <div class="section-label">2. Lecturas y Significados</div>
+    <div class="grid-container" id="reading-grid"></div>
+
+    <div class="signature">Creado By Norma Jara 💜</div>
+
+    <div class="footer-game">
+        <div>Aciertos: <span id="score">0</span> / <span id="total">0</span></div>
+        <button class="btn-reset" onclick="initGame()">Mezclar</button>
+    </div>
+
+    <script>
+        const database = {
+            u7: [
+                {k:'上', m:'arriba', h:'うえ'}, {k:'下', m:'abajo', h:'した'},
+                {k:'父', m:'padre', h:'ちち'}, {k:'母', m:'madre', h:'はは'},
+                {k:'子', m:'niño', h:'こ'}, {k:'手', m:'mano', h:'て'},
+                {k:'好', m:'gustar', h:'すき'}, {k:'主', m:'principal', h:'しゅ'},
+                {k:'肉', m:'carne', h:'にく'}, {k:'魚', m:'pescado', h:'さかな'},
+                {k:'食', m:'comer', h:'たべる'}, {k:'飲', m:'beber', h:'のむ'},
+                {k:'物', m:'cosa', h:'もの'}
+            ],
+            u8: [
+                {k:'近', m:'cerca', h:'ちかい'}, {k:'間', m:'entre', h:'あいだ'},
+                {k:'右', m:'derecha', h:'みぎ'}, {k:'左', m:'izquierda', h:'ひだり'},
+                {k:'外', m:'afuera', h:'そと'}, {k:'男', m:'hombre', h:'おとco'},
+                {k:'女', m:'mujer', h:'おんな'}, {k:'大', m:'grande', h:'おおきい'}
+            ],
+            u9: [
+                {k:'書', m:'escribir', h:'かく'}, {k:'聞', m:'escuchar', h:'きく'},
+                {k:'読', m:'leer', h:'よむ'}, {k:'見', m:'ver', h:'みる'},
+                {k:'話', m:'hablar', h:'はなす'}, {k:'買', m:'comprar', h:'かう'},
+                {k:'起', m:'levantarse', h:'おきる'}, {k:'帰', m:'volver', h:'かえる'},
+                {k:'友', m:'amigo', h:'とも'}, {k:'達', m:'plural', h:'たち'},
+                {k:'友達', m:'amigos', h:'ともだち'}
+            ],
+            u10: [
+                {k:'茶', m:'té', h:'ちゃ'}, {k:'酒', m:'alcohol', h:'さけ'},
+                {k:'写', m:'copiar/foto', h:'しゃ'}, {k:'真', m:'verdad', h:'しん'},
+                {k:'写真', m:'foto', h:'しゃしん'}, {k:'紙', m:'papel', h:'かみ'},
+                {k:'映', m:'proyectar', h:'えい'}, {k:'画', m:'imagen', h:'が'},
+                {k:'映画', m:'película', h:'えいが'}, {k:'店', m:'tienda', h:'みせ'},
+                {k:'英', m:'inglés', h:'えい'}, {k:'語', m:'idioma', h:'ご'},
+                {k:'英語', m:'inglés', h:'えいご'}, {k:'自転車', m:'bicicleta', h:'じてんしゃ'}
+            ]
+        };
+
+        let currentUnit = 'u7';
+        let selK = null; let selR = null;
+        let score = 0;
+
+        function switchUnit(unit, btn) {
+            currentUnit = unit;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            initGame();
+        }
+
+        function initGame() {
+            const kGrid = document.getElementById('kanji-grid');
+            const rGrid = document.getElementById('reading-grid');
+            const data = database[currentUnit];
+            score = 0;
+            document.getElementById('score').innerText = score;
+            document.getElementById('total').innerText = data.length;
+            selK = null; selR = null;
+
+            const kanjis = [...data].sort(() => Math.random() - 0.5);
+            const readings = [...data].sort(() => Math.random() - 0.5);
+
+            kGrid.innerHTML = ''; rGrid.innerHTML = '';
+
+            kanjis.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<span class="kanji-text">${item.k}</span>`;
+                div.dataset.id = item.k + item.h;
+                div.onclick = () => select(div, 'k');
+                kGrid.appendChild(div);
+            });
+
+            readings.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<span class="hiragana-text">${item.h}</span><span class="translation-text">(${item.m})</span>`;
+                div.dataset.id = item.k + item.h;
+                div.onclick = () => select(div, 'r');
+                rGrid.appendChild(div);
+            });
+            window.scrollTo(0,0);
+        }
+
+        function select(el, type) {
+            if (el.classList.contains('matched')) return;
+            if (type === 'k') {
+                document.querySelectorAll('#kanji-grid .item').forEach(i => i.classList.remove('selected'));
+                selK = el;
+            } else {
+                document.querySelectorAll('#reading-grid .item').forEach(i => i.classList.remove('selected'));
+                selR = el;
+            }
+            el.classList.add('selected');
+
+            if (selK && selR) {
+                if (selK.dataset.id === selR.dataset.id) {
+                    selK.classList.add('matched'); selR.classList.add('matched');
+                    score++;
+                    document.getElementById('score').innerText = score;
+                }
+                const a = selK; const b = selR;
+                setTimeout(() => { a.classList.remove('selected'); b.classList.remove('selected'); }, 200);
+                selK = null; selR = null;
+            }
+        }
+        initGame();
+    </script>
+</body>
+</html>
